@@ -37,6 +37,3 @@ This script requires that the input image using a dark background. There is a ch
 to segment the interest row for poor input images. Please send me more input images to improve the accuracy
 of the script.
 
-Contact the author
-------------------
-Send bug reports to: nash@bsd-noobz.com
