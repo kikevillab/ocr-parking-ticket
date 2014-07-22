@@ -80,6 +80,28 @@ class TicketApp(object):
 		img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 		_, img_binary = cv2.threshold(img_gray, 10, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
 
+		# Save image
+		if self.debug:
+			cv2.imwrite(join(self.imgdir, 'step-2a-segment-ticket.png'), img_binary)
+                
+
+                # Try to find the SFMTA part of ticket
+                template_filename = join(self.imgdir, "template.png")
+                template_img = cv2.imread(template_filename)
+                th, tw = template_img.shape[:2]
+                template_img_gray = cv2.cvtColor(template_img, cv2.COLOR_BGR2GRAY)
+		_, template_img_binary = cv2.threshold(template_img_gray, 10, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
+                result = cv2.matchTemplate(img_gray, template_img_gray, cv2.TM_CCOEFF_NORMED)
+                print("Result: %s" % result)
+                threshold = 0.8
+                loc = np.where(result >= threshold)
+                i = 0
+                for pt in zip(*loc[::-1]):
+                        print("template match")
+                        cv2.rectangle(img_gray, pt, (pt[0] + tw, pt[1] + th), 0, 2)
+                        cv2.imwrite(join(self.imgdir, 'step-2b-segment-ticket-' + str(i) + '.png'), img_gray)
+                        i += 1
+
 		# Find the largest contour
 		contours, _ = cv2.findContours(img_binary.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
 		contours = sorted(contours, key=cv2.contourArea, reverse=True)
