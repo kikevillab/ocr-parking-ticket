@@ -88,21 +88,34 @@ class TicketApp(object):
 
                 
                 # Erode the whole image 
-                sz = 6
-                iters = 1
-                st = cv2.getStructuringElement(getattr(cv2, 'MORPH_RECT'), (sz, sz))
-                res = cv2.morphologyEx(img_binary, getattr(cv2, 'MORPH_ERODE'), st, iterations=iters)
-                cv2.imwrite(join(self.imgdir, 'step-2b-segment-ticket.png'), res)
+                #sz = 6
+                #iters = 1
+                #st = cv2.getStructuringElement(getattr(cv2, 'MORPH_RECT'), (sz, sz))
+                #res = cv2.morphologyEx(img_binary, getattr(cv2, 'MORPH_ERODE'), st, iterations=iters)
+                #cv2.imwrite(join(self.imgdir, 'step-2b-segment-ticket.png'), res)
 
 		# Find the largest contour
-		contours, _ = cv2.findContours(res.copy(), cv2.RETR_LIST, cv2.CHAIN_APPROX_NONE)
+                contours, hierarchy = cv2.findContours(img_binary.copy(), cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
 		contours = sorted(contours, key=cv2.contourArea, reverse=True)
+
+                hierarchy = hierarchy[0]
+                print("hierarchy len: " + str(len(hierarchy)))
+                print("hierarchy: " + str(hierarchy))
+                #for x in xrange(0,len(hierarchy)):
+                #        print("hierarchy: " + str(x) + " -> " + str(hierarchy[x]))
 
                 i = 0
                 for contour in contours:
+                        arclen = cv2.arcLength(contour, True)
+                        if arclen < 1800:
+                                i += 1
+                                continue
+                        contourHierarchy = hierarchy[i]
+                        print("hierarchy: " + str(i) + " -> " + str(contourHierarchy))
                         rotated_rect = cv2.minAreaRect(contour)
                         box = cv2.cv.BoxPoints(rotated_rect)
                         box = np.int0(box)
+                        print("rotated_rect: " + str(rotated_rect))
                         cv2.drawContours(img, [box], 0, (0, 0, 255), 10)
                         i += 1
                 cv2.imwrite(join(self.imgdir, 'step-2b-segment-ticket.png'), img)

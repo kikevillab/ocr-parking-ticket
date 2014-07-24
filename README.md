@@ -2,6 +2,47 @@ Ticket Reader
 =============
 Python script to segment interest row on ticket images.
 
+Ticket Table Cell Contour Identification
+----------------------------------------
+
+- Ticket table cell features:
+  - Aspect ratio of contour bounding box
+  - Percent area of contour bounding box / total area of image
+  - Number of sub-contours
+
+Ticket Table Contour Identification
+-----------------------------------
+
+- Ticket table features:
+  - Aspect ratio of contour bounding box
+  - Percent area of contour bounding box / total area of image
+  - Total number of sub-contours (direct + indirect)
+  - Top-level sub-contour area ratio
+    - Take the top-level sub-contours and add up the contourArea of each one
+    - Calculate the ratio of the counter area / sub-contour's collective area
+  - Number of sub-contours that have been identified as possible ticket table cells
+    - Bootstrap with number of sub-contours with aspect ratio in certain range
+    - Eventually, replace this that uses a training algorithm
+- Machine learning training
+  - One time: Identify actual ticket table coordinates in all test images	
+  - For each image in training set
+    - Generate feature vectors for each contour in the image
+    - Each image has a pre-identified correct contour (via bounding box coords), which will be tagged as positive match
+    - All other contours in image will be tagged as a negative match  
+  - Use some sort of classifier to correctly classify ticket table contour
+    - Start with hand classifier / if then decision tree
+    - If needed, upgrade to OpenCV classifier or custom system
+  - Verify against test set
+
+
+Feature generation
+------------------
+
+For each contour
+  - Is it 
+
+
+
 Requirements
 ------------
 To use the script, you need Python 2.7 and the following software installed on your computer.
