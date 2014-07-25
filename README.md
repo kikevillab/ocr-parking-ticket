@@ -2,13 +2,6 @@ Ticket Reader
 =============
 Python script to segment interest row on ticket images.
 
-Ticket Table Cell Contour Identification
-----------------------------------------
-
-- Ticket table cell features:
-  - Aspect ratio of contour bounding box
-  - Percent area of contour bounding box / total area of image
-  - Number of sub-contours
 
 Ticket Table Contour Identification
 -----------------------------------
@@ -17,12 +10,15 @@ Ticket Table Contour Identification
   - Aspect ratio of contour bounding box
   - Percent area of contour bounding box / total area of image
   - Total number of sub-contours (direct + indirect)
+  - Total number of sub-contours that appear to be rectangles (via approxPolyDP)
   - Top-level sub-contour area ratio
     - Take the top-level sub-contours and add up the contourArea of each one
     - Calculate the ratio of the counter area / sub-contour's collective area
-  - Number of sub-contours that have been identified as possible ticket table cells
+  - (optional) Number of sub-contours that have been identified as possible ticket table cells
+    - Need a way to identify ticket table cells .. 
     - Bootstrap with number of sub-contours with aspect ratio in certain range
     - Eventually, replace this that uses a training algorithm
+  - (advanced) Number of sub-contours that have been identified as containing text from Stroke Width Transform
 - Machine learning training
   - One time: Identify actual ticket table coordinates in all test images	
   - For each image in training set
