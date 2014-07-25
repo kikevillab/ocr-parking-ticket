@@ -95,27 +95,27 @@ class TicketApp(object):
                 i = 0
                 for contour in contours:
                         contourHierarchy = hierarchy[i]
-                        print("hierarchy: " + str(i) + " -> " + str(contourHierarchy))
+                        # print("hierarchy: " + str(i) + " -> " + str(contourHierarchy))
 
                         arclen = cv2.arcLength(contour, True)
-                        if arclen < 100:
+                        if arclen < 1200:
                                 i += 1
                                 continue
-                        features = self.getFeatures(img_binary, contour, i, hierarchy)
-                        rotated_rect = cv2.minAreaRect(contour)
-                        box = cv2.cv.BoxPoints(rotated_rect)
-                        box = np.int0(box)
-                        print("rotated_rect: " + str(rotated_rect))
+                        features = self.getFeatures(img_binary, contours, contour, i, hierarchy)
                         
-                        # Get rectangle approximation
-                        arclen = cv2.arcLength(contour, True)
-                        approx = cv2.approxPolyDP(contour, arclen * 0.02, True)
-                        approxInner = [approx]
-                        print("approxInner: " + str(approxInner))
-                        printable = [5423, 5424, 5425, 5426, 5427, 5428, 5429, 5430, 5431, 5432, 5433, 5434, 5435, 5436, 5437, 5438, 5439, 5440, 5441, 5442, 5443, 5444, 5445, 5446, 5447, 5448, 5449, 5450, 5451, 5452, 5453, 5454, 5455, 5456, 5457, 5458, 5459, 5460, 5461, 5462, 5463, 5464, 5465, 5466, 5467, 5468, 5469, 5470, 5471, 5472, 5473, 5474, 5475, 5476, 5477, 5478, 5479, 5480, 5481, 5482, 5483, 5484, 5485, 5486, 5487, 5488, 5489, 5490, 5491, 5492, 5493, 5494, 5495, 5496, 5497, 5498, 5499, 5500, 5501, 5502, 5503, 5504, 5505, 5506, 5507, 5508, 5509, 5510, 5511, 5512, 5513, 5514, 5515, 5516, 5517, 5518, 5519, 5520, 5521, 5522, 5523, 5524, 5525, 5526, 5527, 5528, 5529, 5530, 5531, 5532, 5533, 5534, 5535, 5536, 5537, 5538, 5539, 5540, 5541, 5542, 5543, 5544, 5545, 5546, 5547, 5548, 5549, 5550, 5551, 5552, 5553, 5554, 5555, 5556, 5557, 5558, 5559, 5560, 5561, 5562, 5563, 5564, 5565, 5566, 5567, 5568, 5569, 5570, 5571, 5572, 5573, 5574, 5575, 5576, 5577, 5578, 5579, 5580, 5581, 5582, 5583, 5584, 5585, 5586, 5587, 5588, 5589, 5590, 5591, 5592, 5593, 5594, 5595, 5596, 5597, 5598, 5599, 5600, 5601, 5602, 5603, 5604, 5605, 5606, 5607, 5608, 5609, 5610, 5611, 5612, 5613, 5614, 5615, 5616, 5617, 5618, 5619, 5620, 5621, 5622, 5623, 5624, 5625, 5626, 5627, 5628, 5629, 5630, 5631, 5632, 5633, 5634, 5635, 5636, 5637, 5638, 5639, 5640, 5641, 5642, 5643, 5644, 5645, 5646, 5647, 5648, 5649, 5650, 5651, 5652, 5653, 5654, 5655, 5656, 5657, 5658, 5659, 5660, 5661, 5662, 5663, 5664, 5665, 5666, 5667, 5668, 5669, 5670, 5671, 5672, 5673, 5674, 5675, 5676, 5677, 5678, 5679, 5680, 5681, 5682, 5683, 5684, 5685, 5686, 5687, 5688, 5689, 5690, 5691, 5692, 5693, 5694, 5695, 5696, 5697, 5698, 5699, 5700]
-
-                        if i in printable:
-                                cv2.drawContours(img, [box], 0, (0, 0, 255), 10)
+                        aspectRatio, percent_area, numSubContours, numRectSubContours = features
+                        # if numSubContours > 100 and numRectSubContours > 20 and percent_area > 0.02 and percent_area < 0.25:
+                        if numSubContours > 100 and numRectSubContours > 20:
+                                print("\n\ncontour %s:\n\n" % i)
+                                print("aspectRatio: %s" % aspectRatio)
+                                print("percentArea: %s" % percent_area)
+                                print("numSubContours of %s: %s" % (i, numSubContours))
+                                print("rect subContours : %s" % numRectSubContours)
+                                rotated_rect = cv2.minAreaRect(contour)
+                                box = cv2.cv.BoxPoints(rotated_rect)
+                                box = np.int0(box)
+                                cv2.drawContours(img, [box], 0, (0, 0, 255), 10)        
+                        
                         i += 1
 
                 cv2.imwrite(join(self.imgdir, 'step-2b-segment-ticket.png'), img)
@@ -153,7 +153,7 @@ class TicketApp(object):
 
 		return dst
 
-        def getFeatures(self, img_binary, contour, contour_idx, hierarchy):
+        def getFeatures(self, img_binary, contours, contour, contour_idx, hierarchy):
                 """
                 Get all the features for this contour:
                 - Aspect ratio of contour bounding box
@@ -161,21 +161,53 @@ class TicketApp(object):
                 - Total number of sub-contours (direct + indirect)
                 - Total number of sub-contours that appear to be rectangles (via approxPolyDP)
                 - Top-level sub-contour area ratio
-                - Take the top-level sub-contours and add up the contourArea of each one
-                - Calculate the ratio of the counter area / sub-contour's collective area
+                  - Take the top-level sub-contours and add up the contourArea of each one
+                  - Calculate the ratio of the counter area / sub-contour's collective area
                 """
                 aspectRatio = self.getFeatureAspectRatio(contour)
-                print("aspectRatio: %s" % aspectRatio)
-                percent_area = self.getFeaturePercentArea(img_binary, contour)
-                print("percentArea: %s" % percent_area)
-                subContours = self.findNumberChildContours(contour_idx, hierarchy)
-                numSubContours = len(subContours)
-                print("numSubContours of %s: %s" % (contour_idx, numSubContours))
-                print("subContours : %s" % subContours)
-                return 
 
-        def findNumberChildContours(self, contour_idx, hierarchy):
-                print("findNumberChildContours called with contour: %s" % contour_idx)
+                percent_area = self.getFeaturePercentArea(img_binary, contour)
+                subContours = self.findChildContours(contour_idx, hierarchy)
+                numSubContours = len(subContours)
+                rectSubContours = self.filterRectangleContours(contours, subContours)
+                numRectSubContours = len(rectSubContours)
+
+                # subContourAreaRatio = self.subContourAreaRatio(img_binary)
+                # print("subContourAreaRatio : %s" % subContourAreaRatio)
+
+                return [aspectRatio, percent_area, numSubContours, numRectSubContours]
+
+
+        def subContourAreaRatio(self, img_binary):
+                # TODO: look at all direct children of contour rather than 
+                # calling findContours
+                subContoursArea = 0
+                contours, _ = cv2.findContours(img_binary.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+                for contour in contours:
+                        contourArea = self.contourArea(contour)
+                        subContoursArea += contourArea
+                img_area = self.getImageArea(img_binary)
+                return subContoursArea / img_area
+ 
+        def contourArea(self, contour):
+                rotated_rect = cv2.minAreaRect(contour)
+                center, size, angle = rotated_rect
+                width, height = size
+                contour_area = width * height
+                return contour_area
+
+        def filterRectangleContours(self, contours, subContours):
+                def is_rectangle(contour_idx):
+                        contour = contours[contour_idx]
+                        arclen = cv2.arcLength(contour, True)
+                        approx = cv2.approxPolyDP(contour, arclen * 0.02, True)
+                        approxInner = [approx]
+                        if len(approx) == 4:
+                                return contour_idx
+
+                return filter(is_rectangle, subContours)
+
+        def findChildContours(self, contour_idx, hierarchy):
                 accumulator = []
                 contour_hierarchy = hierarchy[contour_idx]
                 _, _, first_child, _ = contour_hierarchy
@@ -184,9 +216,7 @@ class TicketApp(object):
                 return accumulator
 
         def findSiblingsAndChildren(self, accumulator, hierarchy, contour_idx):
-                print("findNumberChildContours called with contour: %s accum len: %s" % (contour_idx, len(accumulator)))
-                
-                print("append: %s" % contour_idx)
+
                 accumulator.append(contour_idx)
 
                 # [Next, Previous, First_Child, Parent]
@@ -196,29 +226,26 @@ class TicketApp(object):
                         self.findSiblingsAndChildren(accumulator, hierarchy, first_child)
                 
                 while nxt != -1:
-                      print("append: %s" % nxt)
                       accumulator.append(nxt)
                       nxt, _, first_child_nxt, _ = hierarchy[nxt]
                       if first_child_nxt != -1:
                               self.findSiblingsAndChildren(accumulator, hierarchy, first_child_nxt)
-                      
-                      
 
 
         def getFeaturePercentArea(self, img_binary, contour):
                 """
                 Percent area of contour bounding box / total area of image
                 """
-                rotated_rect = cv2.minAreaRect(contour)
-                center, size, angle = rotated_rect
-                width, height = size
-                contour_area = width * height
+                contour_area = self.contourArea(contour)
+                img_area = self.getImageArea(img_binary)
+                percent_area = contour_area / img_area
+                return percent_area
+
+        def getImageArea(self, img_binary):
                 img_binary_cvmat = cv2.cv.fromarray(img_binary)
                 img_width, img_height = cv2.cv.GetSize(img_binary_cvmat)
                 img_area = img_width * img_height
-                percent_area = contour_area / img_area
-                print("percent_area: %s" % (percent_area))
-                return percent_area
+                return img_area
 
         def getFeatureAspectRatio(self, contour):
                 """
