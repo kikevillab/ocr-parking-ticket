@@ -3,6 +3,17 @@ Ticket Reader
 Python script to segment interest row on ticket images.
 
 
+Todo
+----
+
+- Remove unneeded code
+- Clean up function signature to be image -> ticketTable result (contour, rotated rect)
+- Divide images into training and test sets (8 training, 2 test)
+- Create unit test that assumes training has been done, runs through training and test set and verifies correct responses.  Some tests will currently fail!  (since no ML)
+- Feed features into ML algorithm and train
+- Run trained ML algorithm against test set
+
+
 Ticket Table Contour Identification
 -----------------------------------
 
