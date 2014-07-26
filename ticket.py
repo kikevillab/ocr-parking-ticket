@@ -34,11 +34,10 @@ class TicketApp(object):
 
 		# Process the image
 		img = self.load_image()
-		ticketTableContour = self.findTicketTableContour(img)
-                #if ticketTableContour == None:
-                #        raise "Could not find ticket table contour"
+		ticketTableContours = self.findTicketTableContourCandidates(img)
+                for contour in ticketTableContours:
+                        self.drawContour(contour, img)       
 
-                #self.drawContour(ticketTableContour, img)
                 cv2.imwrite(join(self.imgdir, 'step-2b-segment-ticket.png'), img)
 
 
@@ -73,13 +72,16 @@ class TicketApp(object):
 			print('Cannot load the input image "%s"!' % filename)
 			sys.exit()
 
-	def findTicketTableContour(self, img):
+	def findTicketTableContourCandidates(self, img):
 
 		"""
-                Extract the features.  One feature row for each contour.
+                Find the contours that are most likely to be the one that corresponds
+                to the ticket table.  Most likely result is at 0th index of returned list.
 		"""
 		if img is None:
 			return
+
+                results = []
 
 		# Create binary image
 		img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
@@ -109,10 +111,11 @@ class TicketApp(object):
                                 print("percentArea: %s" % percent_area)
                                 print("numSubContours of %s: %s" % (i, numSubContours))
                                 print("rect subContours : %s" % numRectSubContours)
-                                self.drawContour(contour, img)
-                                # return contour
+                                results.append(contour)
                         
                         i += 1
+
+                return results
 
 
         def drawContour(self, contour, img):
