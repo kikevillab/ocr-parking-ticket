@@ -25,6 +25,7 @@ class TicketApp(object):
 		self.imgdir = dirname(abspath(__file__))
 		self.filename = None
 		self.debug = False
+                self.shouldRunTests = False
 
 		# Parse the script arguments
 		self.parse_args()
@@ -32,13 +33,20 @@ class TicketApp(object):
 		# Remove any temporary images left in the dst dir
 		self.remove_tmp_files()
 
-		# Process the image
+                if self.shouldRunTests == True:
+                        self.runTests()
+
+
+        def processImage(self):
+		
+                # Process the image
 		img = self.load_image()
 		ticketTableContours = self.findTicketTableContourCandidates(img)
                 for contour in ticketTableContours:
                         self.drawContour(contour, img)       
 
-                cv2.imwrite(join(self.imgdir, 'step-2b-segment-ticket.png'), img)
+                if self.debug:
+                        cv2.imwrite('step-process-image.png', img)
 
 
 	def load_image(self):
@@ -51,7 +59,7 @@ class TicketApp(object):
 			exif = img._getexif()
 
 			# Destination temporary image
-			dst = join(self.imgdir, 'step-1-original.png')
+			dst = 'step-1-original.png'
 
 			if 274 in exif:
 				orientation = exif.get(274)
@@ -90,7 +98,7 @@ class TicketApp(object):
 
 		# Save image
 		if self.debug:
-			cv2.imwrite(join(self.imgdir, 'step-find-ticket-table-contour.png'), img_binary)
+			cv2.imwrite('step-find-ticket-table-contour.png', img_binary)
 
 		# Find contours
                 contours, hierarchy = cv2.findContours(img_binary.copy(), cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
@@ -242,11 +250,12 @@ class TicketApp(object):
 	def parse_args(self):
 		parser = argparse.ArgumentParser(description='Script to read a ticket and segment interest text.')
 		parser.add_argument('--debug', action='store_true', help='Keep the intermediate images when processing ticket image.')
+		parser.add_argument('--tests', action='store_true', help='Run tests.')
 		parser.add_argument('filename', help='The input image')
 		args = parser.parse_args()
 
 		# Check if the input image exists
-		if not os.path.isfile(args.filename):
+		if not args.tests and not os.path.isfile(args.filename):
 			print('Error: the input image "%s" does not exist.' % args.filename)
 			sys.exit()
 
@@ -254,6 +263,75 @@ class TicketApp(object):
 		self.imgdir = dirname(abspath(args.filename))
 		self.filename = basename(abspath(args.filename))
 		self.debug = args.debug
+                self.shouldRunTests = args.tests
+
+
+        def runTests(self):
+
+                # - For each test ticket (eg, ticket0.jpg) 
+                #   - Read expected result file to get expected coords of ticket table (eg, read ticket0.json, get ticketTableContour field)
+                #   - Call findTicketTableContourCandidates with ticket0.jpg to get ticket table contour
+                #   - Compare expected vs actual, fail if no match
+
+                import os
+
+                print("runTests ..")
+                def verifyCorrectTicketTables(arg, dirname, fnames):
+                        print("verifyCorrectTicketTables ..")
+                        for fname in fnames:
+                                if os.path.isdir(fname):
+                                        print("Skipping directory: %s" % fname)
+                                        continue
+                                print(fname)
+                                verifyCorrectTicketTable(dirname, fname)
+
+                def verifyCorrectTicketTable(dirname, fname):
+                        print("verifyCorrectTicketTable ..")
+                        self.imgdir = dirname
+                        self.filename = fname
+                        img = self.load_image()
+                        ticketTableContours = self.findTicketTableContourCandidates(img)
+
+
+                        contour = ticketTableContours[1]
+                        print("\n\nbest contour: %s" % contour)
+                        rotated_rect = cv2.minAreaRect(contour)
+                        rotated_rect_center = np.int0(rotated_rect[0])
+                        rotated_rect_size = np.int0(rotated_rect[1])
+                        print("rotated_rect: %s" % str(rotated_rect_center))
+                        print("rotated_rect: %s" % str(rotated_rect_size))
+                        box = cv2.cv.BoxPoints(rotated_rect)
+                        print("box: %s" % str(box))
+                        box = np.int0(box)
+                        print("box: %s" % str(box))
+
+                        if self.debug:
+                                #for contour in ticketTableContours:
+                                #        self.drawContour(contour, img)       
+                                self.drawContour(contour, img)       
+                                cv2.imwrite('step-draw-ticket-table-candidates.png', img)
+
+
+                        if fname == "ticket0-training.jpg":
+                                expectedCenter = np.int0((1078, 2379))
+                                expectedSize = np.int0((946, 1530))
+
+                        if rotated_rect_center[0] != expectedCenter[0] or rotated_rect_center[1] != expectedCenter[1]:
+                                msg = "Actual center (%s) did not match expected (%s)" % (rotated_rect[0], expectedCenter)
+                                raise Exception(msg)
+                        if rotated_rect_size[0] != expectedSize[0] or rotated_rect_size[1] != expectedSize[1]:
+                                msg = "Actual size (%s) did not match expected (%s)" % (rotated_rect[0], expectedSize)
+                                raise Exception(msg)
+
+                # Process all test + training images
+                imagesDir = "data"
+                os.path.walk(imagesDir, verifyCorrectTicketTables, None)
+
+                # >>> import json
+                #>>> json.loads('["foo", {"bar":["baz", null, 1.0, 2]}]')
+                #['foo', {'bar': ['baz', None, 1.0, 2]}]
+
+
 
 if __name__ == "__main__":
 	TicketApp()
