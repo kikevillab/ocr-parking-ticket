@@ -113,8 +113,9 @@ class TicketApp(object):
                         
                         aspectRatio, percent_area, numSubContours, numRectSubContours = features
 
+                        # if numSubContours > 100 and numRectSubContours > 20 and percent_area > 0.08 and percent_area < 0.35:
                         if numSubContours > 100 and numRectSubContours > 20:
-                                print("\n\nchoosing contour %s:\n\n" % i)
+                                print("\n\ncontour %s:\n\n" % i)
                                 print("aspectRatio: %s" % aspectRatio)
                                 print("percentArea: %s" % percent_area)
                                 print("numSubContours of %s: %s" % (i, numSubContours))
@@ -144,7 +145,6 @@ class TicketApp(object):
                   - Calculate the ratio of the counter area / sub-contour's collective area
                 """
                 aspectRatio = self.getFeatureAspectRatio(contour)
-
                 percent_area = self.getFeaturePercentArea(img_binary, contour)
                 subContours = self.findChildContours(contour_idx, hierarchy)
                 numSubContours = len(subContours)
@@ -226,15 +226,23 @@ class TicketApp(object):
                 img_area = img_width * img_height
                 return img_area
 
+
         def getFeatureAspectRatio(self, contour):
                 """
                 Get the aspect ratio of this contour
                 """
                 rotated_rect = cv2.minAreaRect(contour)
                 center, size, angle = rotated_rect
+
+                        
                 width, height = size
                 if height > 0:
-                        aspectRatio = width / height  
+                        if abs(angle) < 1:
+                                aspectRatio = width / height  
+                        elif abs(angle) > 85 or abs(angle) < 95:
+                                aspectRatio = height / width  
+                        else:
+                                raise Exception("Unexpected aspect ratio")
                 else:
                         aspectRatio = 0
 
@@ -286,35 +294,66 @@ class TicketApp(object):
                                 verifyCorrectTicketTable(dirname, fname)
 
                 def verifyCorrectTicketTable(dirname, fname):
-                        print("verifyCorrectTicketTable ..")
+                        
+                        print("-" * 100)
+                        print("verifyCorrectTicketTable for: %s" % fname)
+                        print("-" * 100)
+
                         self.imgdir = dirname
                         self.filename = fname
                         img = self.load_image()
+
                         ticketTableContours = self.findTicketTableContourCandidates(img)
 
 
-                        contour = ticketTableContours[1]
+                        contour = ticketTableContours[0]
                         print("\n\nbest contour: %s" % contour)
                         rotated_rect = cv2.minAreaRect(contour)
                         rotated_rect_center = np.int0(rotated_rect[0])
                         rotated_rect_size = np.int0(rotated_rect[1])
-                        print("rotated_rect: %s" % str(rotated_rect_center))
-                        print("rotated_rect: %s" % str(rotated_rect_size))
+                        print("rotated_rect_center: %s" % str(rotated_rect_center))
+                        print("rotated_rect_size: %s" % str(rotated_rect_size))
                         box = cv2.cv.BoxPoints(rotated_rect)
                         print("box: %s" % str(box))
                         box = np.int0(box)
                         print("box: %s" % str(box))
 
                         if self.debug:
-                                #for contour in ticketTableContours:
-                                #        self.drawContour(contour, img)       
+                                for contour in ticketTableContours:
+                                        self.drawContour(contour, img)       
                                 self.drawContour(contour, img)       
                                 cv2.imwrite('step-draw-ticket-table-candidates.png', img)
-
 
                         if fname == "ticket0-training.jpg":
                                 expectedCenter = np.int0((1078, 2379))
                                 expectedSize = np.int0((946, 1530))
+                        elif fname == "ticket1-training.jpg":
+                                expectedCenter = np.int0((1163, 1965))
+                                expectedSize = np.int0((865, 1376))
+                        elif fname == "ticket2-training.jpg":
+                                expectedCenter = np.int0((1111, 1950))
+                                expectedSize = np.int0((803, 1228))
+                        elif fname == "ticket3-training.jpg":
+                                expectedCenter = np.int0((1104, 2088))
+                                expectedSize = np.int0((1113, 699))
+                        elif fname == "ticket4.jpg":
+                                expectedCenter = np.int0((1204, 2028))
+                                expectedSize = np.int0((900, 576))
+                        elif fname == "ticket5-training.jpg":
+                                expectedCenter = np.int0((1158, 1557))
+                                expectedSize = np.int0((986, 1457))
+                        elif fname == "ticket6-training.jpg":
+                                expectedCenter = np.int0((1289, 1991))
+                                expectedSize = np.int0((1339, 854))
+                        elif fname == "ticket7.jpg":
+                                expectedCenter = np.int0((1049, 1661))
+                                expectedSize = np.int0((520, 817))
+                        elif fname == "ticket8-training.jpg":
+                                expectedCenter = np.int0((1231, 2013))
+                                expectedSize = np.int0((485, 764))
+                        elif fname == "ticket9.jpg":
+                                expectedCenter = np.int0((1177, 1988))
+                                expectedSize = np.int0((1273, 1888))
 
                         if rotated_rect_center[0] != expectedCenter[0] or rotated_rect_center[1] != expectedCenter[1]:
                                 msg = "Actual center (%s) did not match expected (%s)" % (rotated_rect[0], expectedCenter)
