@@ -111,18 +111,25 @@ class TicketApp(object):
 
                         features = self.getFeatures(img_binary, contours, contour, i, hierarchy)
                         
-                        aspectRatio, percent_area, numSubContours, numRectSubContours = features
+                        aspectRatio, percent_area, numSubContours, numRectSubContours, subContourAreaRatio, immediateSubcontourRatio = features
 
                         contourLength = cv2.arcLength(contour, True)
                         approxPolyContour = cv2.approxPolyDP(contour, 0.02 * contourLength, True)
 
-                        # if numSubContours > 100 and numRectSubContours > 20 and percent_area > 0.08 and percent_area < 0.35:
-                        if numSubContours > 100 and numRectSubContours > 20 and percent_area > 0.05 and percent_area < 0.38 and len(approxPolyContour) == 4 and cv2.isContourConvex(approxPolyContour):
+
+                        # this works for tickets 0-7
+                        # if numSubContours > 100 and numRectSubContours > 20 and percent_area > 0.05 and percent_area < 0.38 and len(approxPolyContour) == 4 and cv2.isContourConvex(approxPolyContour) and subContourAreaRatio > 0.75 and immediateSubcontourRatio > 0.05:
+                        
+                        # this works for ticket 8
+                        if numSubContours > 100 and numRectSubContours > 20 and subContourAreaRatio > 0.75 and immediateSubcontourRatio > 0.05 and percent_area < 0.38 and len(approxPolyContour) == 4 and cv2.isContourConvex(approxPolyContour) and percent_area < 0.38:
+
                                 print("\n\ncontour %s:\n\n" % i)
                                 print("aspectRatio: %s" % aspectRatio)
                                 print("percentArea: %s" % percent_area)
                                 print("numSubContours of %s: %s" % (i, numSubContours))
                                 print("rect subContours : %s" % numRectSubContours)
+                                print("subContourAreaRatio : %s" % subContourAreaRatio)
+                                print("immediateSubcontourRatio: %s" % immediateSubcontourRatio)
 
                                 #if i == 7661:
                                 #if i == 7666:  
@@ -179,24 +186,28 @@ class TicketApp(object):
                 # draw the contour itself
                 self.drawContour(contour, img)
 
-                # draw the first child
+                # get all immediate child contours and draw each one
+                childContourIndexes = self.getContourIndexesImmediateChildren(contour, contour_idx, hierarchy, contours)
+                for childContourIdx in childContourIndexes:
+                        contourToDraw = contours[childContourIdx]
+                        self.drawContour(contourToDraw, img)
+
+
+        def getContourIndexesImmediateChildren(self, contour, contour_idx, hierarchy, contours):
+                children = []
                 contour_hierarchy = hierarchy[contour_idx]
                 _, _, first_child_idx, _ = contour_hierarchy
-                child_contour_hierarchy = hierarchy[first_child_idx]
-                first_child = contours[first_child_idx]
-                self.drawContour(first_child, img)
+                if first_child_idx != -1:
+                        children.append(first_child_idx)
+                        nextChildContourIdx = first_child_idx
+                        while nextChildContourIdx != -1:
+                                contour_hierarchy = hierarchy[nextChildContourIdx]
+                                nextChildContourIdx, _, _, _ = contour_hierarchy
+                                if nextChildContourIdx != -1:
+                                        children.append(nextChildContourIdx)
+                return children
 
-                # loop through all child siblings
-                nextChildContourIdx = first_child_idx
-                while nextChildContourIdx != -1:
-                        contour_hierarchy = hierarchy[nextChildContourIdx]
-                        nextChildContourIdx, _, _, _ = contour_hierarchy
-                        if nextChildContourIdx != -1:
-                                next_child = contours[nextChildContourIdx]
-                                self.drawContour(next_child, img)
-                                
-                        
-
+                
 
         def getFeatures(self, img_binary, contours, contour, contour_idx, hierarchy):
                 """
@@ -221,23 +232,44 @@ class TicketApp(object):
                 numSubContours = len(subContours)
                 rectSubContours = self.filterRectangleContours(contours, subContours)
                 numRectSubContours = len(rectSubContours)
+                subContourAreaRatio = self.subContourAreaRatio(contour, contour_idx, hierarchy, contours)
+                immediateSubcontourRatio = self.getFeatureImmeditateSubcontourRatio(contour, contour_idx, hierarchy, contours, subContours)
 
-                # subContourAreaRatio = self.subContourAreaRatio(img_binary)
-                # print("subContourAreaRatio : %s" % subContourAreaRatio)
-
-                return [aspectRatio, percent_area, numSubContours, numRectSubContours]
+                return [aspectRatio, percent_area, numSubContours, numRectSubContours, subContourAreaRatio, immediateSubcontourRatio]
 
 
-        def subContourAreaRatio(self, img_binary):
-                # TODO: look at all direct children of contour rather than 
-                # calling findContours
-                subContoursArea = 0
-                contours, _ = cv2.findContours(img_binary.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
-                for contour in contours:
-                        contourArea = self.contourArea(contour)
-                        subContoursArea += contourArea
-                img_area = self.getImageArea(img_binary)
-                return subContoursArea / img_area
+        def getFeatureImmeditateSubcontourRatio(self, contour, contour_idx, hierarchy, contours, subContours):
+                """
+                Ratio of number of immediate subcontours over the number of total subcontours
+                Eg, ticket7.jpg distinguish between ticket table and ticket inner contour
+                """
+                numImmediateSubcontours = len(self.getContourIndexesImmediateChildren(contour, contour_idx, hierarchy, contours))
+                #print("numImmediateSubcontours: %s", numImmediateSubcontours)
+                #print("len(subContours): %s", len(subContours))
+                if len(subContours) > 0:
+                        return numImmediateSubcontours*1.0 / len(subContours)*1.0
+                else:
+                        return 0
+
+        def subContourAreaRatio(self, contour, contour_idx, hierarchy, contours):
+                
+                # find all immediate child contours
+                childContourIndexes = self.getContourIndexesImmediateChildren(contour, contour_idx, hierarchy, contours)
+                
+                # get area of each one and add it to running total
+                childContoursArea = 0.0
+                for childContourIdx in childContourIndexes:
+                        childContour = contours[childContourIdx]
+                        childContourArea = self.contourArea(childContour)
+                        childContoursArea += childContourArea
+
+                parentContourArea = self.contourArea(contour)
+
+                if parentContourArea > 0:
+                        return childContoursArea / parentContourArea
+                else:
+                        return 0
+
  
         def contourArea(self, contour):
                 rotated_rect = cv2.minAreaRect(contour)
@@ -370,8 +402,8 @@ class TicketApp(object):
                         print("verifyCorrectTicketTable for: %s" % fname)
                         print("-" * 100)
 
-                        if fname != "ticket7.jpg":
-                                return 
+                        #if fname != "ticket8-training.jpg":
+                        #        return 
 
                         self.imgdir = dirname
                         self.filename = fname
@@ -381,6 +413,9 @@ class TicketApp(object):
 
 
                         contour = ticketTableContours[0]
+                        if len(ticketTableContours) != 1:
+                                raise Exception("Expected 1 result, got: %s" % len(ticketTableContours))
+
                         print("\n\nbest contour: %s" % contour)
                         rotated_rect = cv2.minAreaRect(contour)
                         rotated_rect_center = np.int0(rotated_rect[0])
@@ -395,7 +430,7 @@ class TicketApp(object):
                         if self.debug:
                                 #for contour in ticketTableContours:
                                 #        self.drawContour(contour, img)       
-                                #self.drawContour(contour, img)       
+                                self.drawContour(contour, img)       
                                 cv2.imwrite('step-draw-ticket-table-candidates.png', img)
 
                         if fname == "ticket0-training.jpg":
