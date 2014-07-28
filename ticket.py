@@ -113,13 +113,22 @@ class TicketApp(object):
                         
                         aspectRatio, percent_area, numSubContours, numRectSubContours = features
 
+                        contourLength = cv2.arcLength(contour, True)
+                        approxPolyContour = cv2.approxPolyDP(contour, 0.02 * contourLength, True)
+
                         # if numSubContours > 100 and numRectSubContours > 20 and percent_area > 0.08 and percent_area < 0.35:
-                        if numSubContours > 100 and numRectSubContours > 20 and percent_area > 0.05 and percent_area < 0.38:
+                        if numSubContours > 100 and numRectSubContours > 20 and percent_area > 0.05 and percent_area < 0.38 and len(approxPolyContour) == 4 and cv2.isContourConvex(approxPolyContour):
                                 print("\n\ncontour %s:\n\n" % i)
                                 print("aspectRatio: %s" % aspectRatio)
                                 print("percentArea: %s" % percent_area)
                                 print("numSubContours of %s: %s" % (i, numSubContours))
                                 print("rect subContours : %s" % numRectSubContours)
+
+                                #if i == 7661:
+                                #if i == 7666:  
+                                if i == 7916:
+                                        self.drawContourAndImmediateChildren(contour, img, i, hierarchy, contours)
+
                                 results.append(contour)
                         
                         i += 1
@@ -161,7 +170,33 @@ class TicketApp(object):
                 rotated_rect = cv2.minAreaRect(contour)
                 box = cv2.cv.BoxPoints(rotated_rect)
                 box = np.int0(box)
-                cv2.drawContours(img, [box], 0, (0, 0, 255), 10)        
+                cnt_len = cv2.arcLength(contour, True)
+                cnt = cv2.approxPolyDP(contour, 0.02*cnt_len, True)
+                cv2.drawContours(img, [cnt], 0, (0, 0, 255), 10)        
+
+        def drawContourAndImmediateChildren(self, contour, img, contour_idx, hierarchy, contours):
+
+                # draw the contour itself
+                self.drawContour(contour, img)
+
+                # draw the first child
+                contour_hierarchy = hierarchy[contour_idx]
+                _, _, first_child_idx, _ = contour_hierarchy
+                child_contour_hierarchy = hierarchy[first_child_idx]
+                first_child = contours[first_child_idx]
+                self.drawContour(first_child, img)
+
+                # loop through all child siblings
+                nextChildContourIdx = first_child_idx
+                while nextChildContourIdx != -1:
+                        contour_hierarchy = hierarchy[nextChildContourIdx]
+                        nextChildContourIdx, _, _, _ = contour_hierarchy
+                        if nextChildContourIdx != -1:
+                                next_child = contours[nextChildContourIdx]
+                                self.drawContour(next_child, img)
+                                
+                        
+
 
         def getFeatures(self, img_binary, contours, contour, contour_idx, hierarchy):
                 """
@@ -335,7 +370,7 @@ class TicketApp(object):
                         print("verifyCorrectTicketTable for: %s" % fname)
                         print("-" * 100)
 
-                        if fname != "ticket6-training.jpg":
+                        if fname != "ticket7.jpg":
                                 return 
 
                         self.imgdir = dirname
@@ -358,9 +393,9 @@ class TicketApp(object):
                         print("box: %s" % str(box))
 
                         if self.debug:
-                                for contour in ticketTableContours:
-                                        self.drawContour(contour, img)       
-                                self.drawContour(contour, img)       
+                                #for contour in ticketTableContours:
+                                #        self.drawContour(contour, img)       
+                                #self.drawContour(contour, img)       
                                 cv2.imwrite('step-draw-ticket-table-candidates.png', img)
 
                         if fname == "ticket0-training.jpg":
