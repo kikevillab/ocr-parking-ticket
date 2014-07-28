@@ -114,7 +114,7 @@ class TicketApp(object):
                         aspectRatio, percent_area, numSubContours, numRectSubContours = features
 
                         # if numSubContours > 100 and numRectSubContours > 20 and percent_area > 0.08 and percent_area < 0.35:
-                        if numSubContours > 100 and numRectSubContours > 20:
+                        if numSubContours > 100 and numRectSubContours > 20 and percent_area > 0.05 and percent_area < 0.38:
                                 print("\n\ncontour %s:\n\n" % i)
                                 print("aspectRatio: %s" % aspectRatio)
                                 print("percentArea: %s" % percent_area)
@@ -125,6 +125,36 @@ class TicketApp(object):
                         i += 1
 
                 return results
+
+
+        def clusterize_colors(self, img):
+		
+                """Reduce colors by clusterizing the colors using K-Nearest algorithm.
+		"""
+		if img is None:
+			return
+ 
+		# Set the color classes
+		colors = np.array([[0x00, 0x00, 0x00],
+						   [0xff, 0xff, 0xff],
+						   [0xff, 0x00, 0xff]], dtype=np.float32)
+		classes = np.array([[0], [1], [2]], np.float32)
+ 
+		# Predict with K-Nearest
+		knn = cv2.KNearest()
+		knn.train(colors, classes)
+		img_flatten = np.reshape(np.ravel(img, 'C'), (-1, 3))
+		retval, result, neighbors, dist = knn.find_nearest(img_flatten.astype(np.float32), 1)
+ 
+		# Set new colors
+		dst = colors[np.ravel(result, 'C').astype(np.uint8)]
+		dst = dst.reshape(img.shape).astype(np.uint8)
+ 
+		# Save image
+		if self.debug:
+			cv2.imwrite(join(self.imgdir, 'step-clusterize-colors.png'), dst)
+ 
+		return dst
 
 
         def drawContour(self, contour, img):
@@ -143,6 +173,12 @@ class TicketApp(object):
                 - Top-level sub-contour area ratio
                   - Take the top-level sub-contours and add up the contourArea of each one
                   - Calculate the ratio of the counter area / sub-contour's collective area
+                """
+
+                """
+                Problematic Ticket6 ideas:
+                - Draw actual contour and look at shape, see how convex it is or other properties to differentiate
+                - Do top-level sub-contour area ratio as described above
                 """
                 aspectRatio = self.getFeatureAspectRatio(contour)
                 percent_area = self.getFeaturePercentArea(img_binary, contour)
@@ -298,6 +334,9 @@ class TicketApp(object):
                         print("-" * 100)
                         print("verifyCorrectTicketTable for: %s" % fname)
                         print("-" * 100)
+
+                        if fname != "ticket6-training.jpg":
+                                return 
 
                         self.imgdir = dirname
                         self.filename = fname
