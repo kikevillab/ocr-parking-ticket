@@ -131,11 +131,6 @@ class TicketApp(object):
                                 print("subContourAreaRatio : %s" % subContourAreaRatio)
                                 print("immediateSubcontourRatio: %s" % immediateSubcontourRatio)
 
-                                #if i == 7661:
-                                #if i == 7666:  
-                                if i == 7916:
-                                        self.drawContourAndImmediateChildren(contour, img, i, hierarchy, contours)
-
                                 results.append(contour)
                         
                         i += 1
@@ -431,7 +426,7 @@ class TicketApp(object):
                                 #for contour in ticketTableContours:
                                 #        self.drawContour(contour, img)       
                                 self.drawContour(contour, img)       
-                                cv2.imwrite('step-draw-ticket-table-candidates.png', img)
+                                cv2.imwrite('%s-ticket-table.png' % fname, img)
 
                         if fname == "ticket0-training.jpg":
                                 expectedCenter = np.int0((1078, 2379))
