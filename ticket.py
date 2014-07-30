@@ -106,18 +106,22 @@ class TicketApp(object):
                 childContourIndexes = self.getContourIndexesImmediateChildren(ctx.contour, ctx.contourIdx, ctx.hierarchy, ctx.contours)
                 
                 i = 0
+                candidates = []
                 for childContourIdx in childContourIndexes:
                         childContour = ctx.contours[childContourIdx]
                         childWidth = self.getLongestRotatedRectSize(childContour)
                         ratioWidth = childWidth / width
-                        print("width: %s childWidth: %s ratioWidth: %s" % (width, childWidth, ratioWidth))
-                        if ratioWidth > 0.95 and childContourIdx == 130:
-                                print("drawing contour i: %i contourIdx: %s" % (i, childContourIdx))
-                                self.drawContour(childContour, img)
-                                matchedContext = ContourContext(childContour, childContourIdx, ctx.contours, ctx.hierarchy)
-                                return matchedContext
-
+                        if ratioWidth > 0.95:
+                                print("candidate width: %s childWidth: %s ratioWidth: %s" % (width, childWidth, ratioWidth))
+                                candidates.append((childContour, childContourIdx))
                         i += 1
+
+                childContour, childContourIdx = candidates[1]
+                print("drawing contour i: %i contourIdx: %s" % (i, childContourIdx))
+                self.drawContour(childContour, img)
+                matchedContext = ContourContext(childContour, childContourIdx, ctx.contours, ctx.hierarchy)
+                return matchedContext
+                
 
 
         def findTicketTableContour(self, img):
@@ -470,7 +474,7 @@ class TicketApp(object):
                                         print("Skipping directory: %s" % fname)
                                         continue
                                 print(fname)
-                                verifyCorrectTicketTable(dirname, fname)
+                                #verifyCorrectTicketTable(dirname, fname)
                                 verifyCorrectParkingViolationCell(dirname, fname)
 
                 def verifyCorrectParkingViolationCell(dirname, fname):
@@ -479,8 +483,8 @@ class TicketApp(object):
                         print("verifyCorrectParkingViolationCell for: %s" % fname)
                         print("-" * 100)
 
-                        if fname != "ticket0-training.jpg":
-                                return 
+                        #if not fname.startswith("ticket9"):
+                        #        return 
 
                         self.imgdir = dirname
                         self.filename = fname
@@ -500,14 +504,41 @@ class TicketApp(object):
                         print("rotated_rect_center: %s" % str(rotated_rect_center))
                         print("rotated_rect_size: %s" % str(rotated_rect_size))
 
+                        if self.debug:
+                                cv2.imwrite('%s-parking-violation.png' % fname, img)
+
                         if fname == "ticket0-training.jpg":
                                 expectedCenter = np.int0((1079, 2930))
                                 expectedSize = np.int0((152, 931))
+                        elif fname == "ticket1-training.jpg":
+                                expectedCenter = np.int0((1166, 2467))
+                                expectedSize = np.int0((837, 142))
+                        elif fname == "ticket2-training.jpg":
+                                expectedCenter = np.int0((1112, 2385))
+                                expectedSize = np.int0((127, 783))
+                        elif fname == "ticket3-training.jpg":
+                                expectedCenter = np.int0((1099, 2492))
+                                expectedSize = np.int0((681, 110))
+                        elif fname == "ticket4.jpg":
+                                expectedCenter = np.int0((1186, 2344))
+                                expectedSize = np.int0((90, 557))
+                        elif fname == "ticket5-training.jpg":
+                                expectedCenter = np.int0((1169, 2074))
+                                expectedSize = np.int0((960, 153))
+                        elif fname == "ticket6-training.jpg":
+                                expectedCenter = np.int0((1284, 2474))
+                                expectedSize = np.int0((135, 837))
+                        elif fname == "ticket7.jpg":
+                                expectedCenter = np.int0((1058, 1959))
+                                expectedSize = np.int0((502, 78))
+                        elif fname == "ticket8-training.jpg":
+                                expectedCenter = np.int0((1229, 2291))
+                                expectedSize = np.int0((469, 73))
+                        elif fname == "ticket9.jpg":
+                                expectedCenter = np.int0((1201, 2648))
+                                expectedSize = np.int0((1232, 206))
 
                         verifyRotatedRectMatch(rotated_rect_center, rotated_rect_size, expectedCenter, expectedSize)
-
-                        if self.debug:
-                                cv2.imwrite('%s-parking-violation.png' % fname, img)
 
                 def verifyRotatedRectMatch(rotated_rect_center, rotated_rect_size, expectedCenter, expectedSize):
 
