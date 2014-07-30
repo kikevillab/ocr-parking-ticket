@@ -17,6 +17,19 @@ except ImportError:
 	print('Please install the required modules: numpy, Pillow, and cv2.')
 	sys.exit()
 
+
+class ContourContext(object):
+
+        """
+        A contour with its context
+        """
+        def __init__(self, contour, contourIdx, contours, hierarchy):
+                self.contour = contour 
+                self.contourIdx = contourIdx
+                self.contours = contours 
+                self.hierarchy = hierarchy
+
+
 class TicketApp(object):
 
 	def __init__(self):
@@ -80,6 +93,39 @@ class TicketApp(object):
 			print('Cannot load the input image "%s"!' % filename)
 			sys.exit()
 
+
+        def findParkingViolationContour(self, img, ctx):
+                """
+                Given a ticket table contour + its surrounding context, pick out the 
+                subcontour that represents the parking violation table cell and return it.
+                """
+
+
+                width = self.getShortestRotatedRectSide(ctx.contour)
+
+                childContourIndexes = self.getContourIndexesImmediateChildren(ctx.contour, ctx.contourIdx, ctx.hierarchy, ctx.contours)
+                
+                i = 0
+                for childContourIdx in childContourIndexes:
+                        childContour = ctx.contours[childContourIdx]
+                        childWidth = self.getLongestRotatedRectSize(childContour)
+                        ratioWidth = childWidth / width
+                        print("width: %s childWidth: %s ratioWidth: %s" % (width, childWidth, ratioWidth))
+                        if ratioWidth > 0.95 and childContourIdx == 130:
+                                print("drawing contour i: %i contourIdx: %s" % (i, childContourIdx))
+                                self.drawContour(childContour, img)
+                                matchedContext = ContourContext(childContour, childContourIdx, ctx.contours, ctx.hierarchy)
+                                return matchedContext
+
+                        i += 1
+
+
+        def findTicketTableContour(self, img):
+                candidates = self.findTicketTableContourCandidates(img)
+                if len(candidates) != 1:
+                        raise Exception("Expected 1 ticket table candidate, found %s", len(candidates))
+                return candidates[0]
+
 	def findTicketTableContourCandidates(self, img):
 
 		"""
@@ -120,7 +166,7 @@ class TicketApp(object):
                         # this works for tickets 0-7
                         # if numSubContours > 100 and numRectSubContours > 20 and percent_area > 0.05 and percent_area < 0.38 and len(approxPolyContour) == 4 and cv2.isContourConvex(approxPolyContour) and subContourAreaRatio > 0.75 and immediateSubcontourRatio > 0.05:
                         
-                        # this works for ticket 8
+                        # this works for ticket 8 + all other tickets
                         if numSubContours > 100 and numRectSubContours > 20 and subContourAreaRatio > 0.75 and immediateSubcontourRatio > 0.05 and percent_area < 0.38 and len(approxPolyContour) == 4 and cv2.isContourConvex(approxPolyContour) and percent_area < 0.38:
 
                                 print("\n\ncontour %s:\n\n" % i)
@@ -131,7 +177,9 @@ class TicketApp(object):
                                 print("subContourAreaRatio : %s" % subContourAreaRatio)
                                 print("immediateSubcontourRatio: %s" % immediateSubcontourRatio)
 
-                                results.append(contour)
+                                contourContext = ContourContext(contour, i, contours, hierarchy)
+
+                                results.append(contourContext)
                         
                         i += 1
 
@@ -174,7 +222,7 @@ class TicketApp(object):
                 box = np.int0(box)
                 cnt_len = cv2.arcLength(contour, True)
                 cnt = cv2.approxPolyDP(contour, 0.02*cnt_len, True)
-                cv2.drawContours(img, [cnt], 0, (0, 0, 255), 10)        
+                cv2.drawContours(img, [box], 0, (0, 0, 255), 10)        
 
         def drawContourAndImmediateChildren(self, contour, img, contour_idx, hierarchy, contours):
 
@@ -272,6 +320,39 @@ class TicketApp(object):
                 width, height = size
                 contour_area = width * height
                 return contour_area
+
+        def getContourSize(self, contour):
+                rotated_rect = cv2.minAreaRect(contour)
+                _, size, _ = rotated_rect
+                return size
+
+        def getShortestRotatedRectSide(self, contour):
+                """
+                #codereviewneeded
+                Given a rotated rect, find the shortest side.  This was needed because some 
+                rotated rects are at angle == 0, whereas others are angle == -90, and I need
+                to compare the widths of these rectangles.  
+
+                Since the rectangles I'm comparing are fairly "narrow", this should be a 
+                reliable way to do so until I can figure out a more elegant approach.
+                """
+                width, height = self.getContourSize(contour)
+                if width < height:
+                        return width 
+                else:
+                        return height 
+
+        def getLongestRotatedRectSize(self, contour):
+                """
+                #codereviewneeded
+                See getShortestRotatedRectSide
+                """
+                width, height = self.getContourSize(contour)
+                if width > height:
+                        return width 
+                else:
+                        return height 
+
 
         def filterRectangleContours(self, contours, subContours):
                 def is_rectangle(contour_idx):
@@ -390,6 +471,53 @@ class TicketApp(object):
                                         continue
                                 print(fname)
                                 verifyCorrectTicketTable(dirname, fname)
+                                verifyCorrectParkingViolationCell(dirname, fname)
+
+                def verifyCorrectParkingViolationCell(dirname, fname):
+
+                        print("-" * 100)
+                        print("verifyCorrectParkingViolationCell for: %s" % fname)
+                        print("-" * 100)
+
+                        if fname != "ticket0-training.jpg":
+                                return 
+
+                        self.imgdir = dirname
+                        self.filename = fname
+                        img = self.load_image()
+
+                        self.imgdir = dirname
+                        self.filename = fname
+                        img = self.load_image()
+
+                        ticketTableContour = self.findTicketTableContour(img)
+
+                        prkgViolationContour = self.findParkingViolationContour(img, ticketTableContour)
+
+                        rotated_rect = cv2.minAreaRect(prkgViolationContour.contour)
+                        rotated_rect_center = np.int0(rotated_rect[0])
+                        rotated_rect_size = np.int0(rotated_rect[1])
+                        print("rotated_rect_center: %s" % str(rotated_rect_center))
+                        print("rotated_rect_size: %s" % str(rotated_rect_size))
+
+                        if fname == "ticket0-training.jpg":
+                                expectedCenter = np.int0((1079, 2930))
+                                expectedSize = np.int0((152, 931))
+
+                        verifyRotatedRectMatch(rotated_rect_center, rotated_rect_size, expectedCenter, expectedSize)
+
+                        if self.debug:
+                                cv2.imwrite('%s-parking-violation.png' % fname, img)
+
+                def verifyRotatedRectMatch(rotated_rect_center, rotated_rect_size, expectedCenter, expectedSize):
+
+                        if rotated_rect_center[0] != expectedCenter[0] or rotated_rect_center[1] != expectedCenter[1]:
+                                msg = "Actual center (%s) did not match expected (%s)" % (rotated_rect[0], expectedCenter)
+                                raise Exception(msg)
+                        if rotated_rect_size[0] != expectedSize[0] or rotated_rect_size[1] != expectedSize[1]:
+                                msg = "Actual size (%s) did not match expected (%s)" % (rotated_rect[0], expectedSize)
+                                raise Exception(msg)
+                        
 
                 def verifyCorrectTicketTable(dirname, fname):
                         
@@ -397,19 +525,15 @@ class TicketApp(object):
                         print("verifyCorrectTicketTable for: %s" % fname)
                         print("-" * 100)
 
-                        #if fname != "ticket8-training.jpg":
-                        #        return 
+                        if fname != "ticket0-training.jpg":
+                                return 
 
                         self.imgdir = dirname
                         self.filename = fname
                         img = self.load_image()
 
-                        ticketTableContours = self.findTicketTableContourCandidates(img)
-
-
-                        contour = ticketTableContours[0]
-                        if len(ticketTableContours) != 1:
-                                raise Exception("Expected 1 result, got: %s" % len(ticketTableContours))
+                        contourContext = self.findTicketTableContour(img)
+                        contour = contourContext.contour
 
                         print("\n\nbest contour: %s" % contour)
                         rotated_rect = cv2.minAreaRect(contour)
@@ -459,12 +583,7 @@ class TicketApp(object):
                                 expectedCenter = np.int0((1177, 1988))
                                 expectedSize = np.int0((1273, 1888))
 
-                        if rotated_rect_center[0] != expectedCenter[0] or rotated_rect_center[1] != expectedCenter[1]:
-                                msg = "Actual center (%s) did not match expected (%s)" % (rotated_rect[0], expectedCenter)
-                                raise Exception(msg)
-                        if rotated_rect_size[0] != expectedSize[0] or rotated_rect_size[1] != expectedSize[1]:
-                                msg = "Actual size (%s) did not match expected (%s)" % (rotated_rect[0], expectedSize)
-                                raise Exception(msg)
+                        verifyRotatedRectMatch(rotated_rect_center, rotated_rect_size, expectedCenter, expectedSize)
 
                 # Process all test + training images
                 imagesDir = "data"
