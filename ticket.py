@@ -40,16 +40,6 @@ class TicketApp(object):
 		self.debug = False
                 self.shouldRunTests = False
 
-		# Parse the script arguments
-		self.parse_args()
-
-		# Remove any temporary images left in the dst dir
-		self.remove_tmp_files()
-
-                if self.shouldRunTests == True:
-                        self.runTests()
-
-
         def processImage(self):
 		
                 # Process the image
@@ -69,6 +59,8 @@ class TicketApp(object):
 			# Read the Exif data first
 			filename = join(self.imgdir, self.filename)
 			img = Image.open(filename)
+                        print("img type: %s" % img.__class__)
+
 			exif = img._getexif()
 
 			# Destination temporary image
@@ -85,6 +77,7 @@ class TicketApp(object):
 				img.save(dst, quality=100)
 
 			img = cv2.imread(dst)	
+
 			if not self.debug:
 				os.remove(dst)
 			return img
@@ -117,9 +110,9 @@ class TicketApp(object):
                         i += 1
 
                 childContour, childContourIdx = candidates[1]
-                print("drawing contour i: %i contourIdx: %s" % (i, childContourIdx))
-                self.drawContour(childContour, img)
+                                
                 matchedContext = ContourContext(childContour, childContourIdx, ctx.contours, ctx.hierarchy)
+
                 return matchedContext
                 
 
@@ -190,7 +183,7 @@ class TicketApp(object):
                 return results
 
 
-        def clusterize_colors(self, img):
+        def clusterize_colors(self, img, imgName):
 		
                 """Reduce colors by clusterizing the colors using K-Nearest algorithm.
 		"""
@@ -215,9 +208,42 @@ class TicketApp(object):
  
 		# Save image
 		if self.debug:
-			cv2.imwrite(join(self.imgdir, 'step-clusterize-colors.png'), dst)
+			cv2.imwrite(imgName, dst)
  
 		return dst
+
+        def getCroppedParkingCell(self, img, prkgViolationContour):
+
+                """
+                Crop out the rotated parking violoation cell into a new image that only
+                contains that cell.
+                See http://answers.opencv.org/question/38452/how-to-extract-pixels-from-a-rotated-box2d/
+                """
+
+                # get rotated rect of contour and split into components
+                center, size, angle = cv2.minAreaRect(prkgViolationContour.contour)
+
+                # not sure why this is needed, see 
+                # http://felix.abecassis.me/2011/10/opencv-rotation-deskewing/
+                if angle < -45.0:
+                        angle += 90.0
+                        width, height = size[0], size[1]
+                        size = (height, width)
+
+                M = cv2.getRotationMatrix2D(center, angle, 1.0)
+
+                # rotate the entire image around the center of the parking cell by the
+                # angle of the rotated rect
+                # codereview: not sure why it was necessary to swap width and height here,
+                # probably related to the fact that we did angle += 90 earlier
+                imgWidth, imgHeight = (img.shape[0], img.shape[1])
+                rotated = cv2.warpAffine(img, M, (imgHeight, imgWidth), flags=cv2.INTER_CUBIC)
+                
+                # extract the rect after rotation has been done
+                sizeInt = (np.int0(size[0]), np.int0(size[1]))
+                uprightRect = cv2.getRectSubPix(rotated, sizeInt, center)
+                return uprightRect
+
 
 
         def drawContour(self, contour, img):
@@ -477,32 +503,41 @@ class TicketApp(object):
                                 #verifyCorrectTicketTable(dirname, fname)
                                 verifyCorrectParkingViolationCell(dirname, fname)
 
+
+
                 def verifyCorrectParkingViolationCell(dirname, fname):
 
                         print("-" * 100)
                         print("verifyCorrectParkingViolationCell for: %s" % fname)
                         print("-" * 100)
 
-                        #if not fname.startswith("ticket9"):
-                        #        return 
+                        if not fname.startswith("ticket0"):
+                                return 
 
                         self.imgdir = dirname
                         self.filename = fname
                         img = self.load_image()
 
-                        self.imgdir = dirname
-                        self.filename = fname
-                        img = self.load_image()
+                        clusterizeColorsImgName = '%s-clusterized.png' % fname
+                        self.clusterize_colors(img, clusterizeColorsImgName)  # TEMP
 
                         ticketTableContour = self.findTicketTableContour(img)
 
                         prkgViolationContour = self.findParkingViolationContour(img, ticketTableContour)
+                        
+                        # self.drawContour(prkgViolationContour, img)
 
                         rotated_rect = cv2.minAreaRect(prkgViolationContour.contour)
                         rotated_rect_center = np.int0(rotated_rect[0])
                         rotated_rect_size = np.int0(rotated_rect[1])
                         print("rotated_rect_center: %s" % str(rotated_rect_center))
                         print("rotated_rect_size: %s" % str(rotated_rect_size))
+                        print("rotated_rect_angle: %s" % rotated_rect[2])
+
+                        croppedParkingCell = self.getCroppedParkingCell(img, prkgViolationContour)
+
+                        if self.debug:
+                                cv2.imwrite('%s-cropped-parking-violation.png' % fname, croppedParkingCell)
 
                         if self.debug:
                                 cv2.imwrite('%s-parking-violation.png' % fname, img)
@@ -627,4 +662,14 @@ class TicketApp(object):
 
 
 if __name__ == "__main__":
-	TicketApp()
+
+	t = TicketApp()
+	
+	# Parse the script arguments
+        t.parse_args()
+
+        # Remove any temporary images left in the dst dir
+        t.remove_tmp_files()
+
+        if t.shouldRunTests == True:
+                t.runTests()
