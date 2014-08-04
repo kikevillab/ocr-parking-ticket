@@ -245,14 +245,100 @@ class TicketApp(object):
                 return uprightRect
 
 
+        def getCroppedParkingCodeText(self, img):
+                """
+                Given an image consisting of only the parking cell (was previously cropped), further 
+                crop out the parking code text region of the image.
+                Find the rightmost contour that matches the following criteria:
+                - Area of subcontour compared to area of parent contour should be approx 2%
+                - The horizontal midpoint of the subcontour should be "near" the horiz. midpoint of parent contour
+                - The distance between top of contour and top of parent contour should be more than 1/5th the height of parent contour
+                """
+
+		# Create binary image
+		img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+                img_binary = cv2.adaptiveThreshold(img_gray, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, 31, 10)
+
+
+		# Find contours
+                contours, hierarchy = cv2.findContours(img_binary.copy(), cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
+                hierarchy0 = hierarchy[0]
+
+                outerMostContourCtx = None
+                contourIdx = 0
+                for contour in contours:
+                        subContours = self.findChildContours(contourIdx, hierarchy0)
+                        numSubcontoursRatio = (len(subContours)*1.0) / (len(contours)*1.0)
+                        #print("total contours: %s subcontours: %s ratio: %s" % (len(contours), len(subContours), numSubcontoursRatio))
+                        if numSubcontoursRatio > 0.75:
+                                outerMostContourCtx = ContourContext(contour, contourIdx, contours, hierarchy0)
+                        contourIdx += 1
+
+                if outerMostContourCtx != None:
+                        contour = outerMostContourCtx.contour
+                        contourIdx = outerMostContourCtx.contourIdx
+                        outerRotatedRect = cv2.minAreaRect(contour)
+                        outerWidth, outerHeight = self.getContourSize(contour)
+                        outerBox = cv2.cv.BoxPoints(outerRotatedRect)
+                        outerBox = np.int0(outerBox)
+                        print("outerBox: %s" % outerBox) 
+
+                        # self.drawContourAndImmediateChildren(contour, img, contourIdx, hierarchy0, contours)
+                        
+                        rightMostChildIdx = None
+                        rightMostX = 0.0
+                        childContourIndexes = self.getContourIndexesImmediateChildren(contour, contourIdx, hierarchy0, contours)
+                        for childContourIdx in childContourIndexes:
+                                childContour = contours[childContourIdx]
+                                rotatedRect = cv2.minAreaRect(childContour)
+                                
+                                box = cv2.cv.BoxPoints(rotatedRect)
+                                box = np.int0(box)
+                                highestYVal = self.highestYVal(box)
+                                distanceFromTopRatio = highestYVal / outerHeight
+                                percentArea = self.getFeaturePercentArea(img, childContour)
+                                if highestYVal > 15 and percentArea > 0.001:
+                                        print("box: %s.  highestY: %s distTopRatio: %s pctArea: %s" % (box, highestYVal, distanceFromTopRatio, percentArea))
+                                        #self.drawContour(childContour, img)
+                                        if rightMostChildIdx == None:
+                                                rightMostChildIdx = childContourIdx
+                                                rightMostX = self.rightMostXVal(box)
+                                        elif self.rightMostXVal(box) > rightMostX:
+                                                rightMostChildIdx = childContourIdx
+                                                rightMostX = self.rightMostXVal(box)
+
+                                #if distanceFromTopRatio > 0.05:
+                                #        self.drawContour(childContour, img)
+
+                        rightMostChildContour = contours[rightMostChildIdx]
+                        self.drawContour(rightMostChildContour, img)
+
+                return img
+
+
+
+        def highestYVal(self, box):
+                highestY = 10000
+                for point in box:
+                        x,y = point
+                        if y < highestY:
+                                highestY = y
+                return highestY
+
+        def rightMostXVal(self, box):
+                rightMostX = -1
+                for point in box:
+                        x,y = point
+                        if x > rightMostX:
+                                rightMostX = x
+                return rightMostX
+
 
         def drawContour(self, contour, img):
                 rotated_rect = cv2.minAreaRect(contour)
                 box = cv2.cv.BoxPoints(rotated_rect)
                 box = np.int0(box)
-                cnt_len = cv2.arcLength(contour, True)
-                cnt = cv2.approxPolyDP(contour, 0.02*cnt_len, True)
-                cv2.drawContours(img, [box], 0, (0, 0, 255), 10)        
+                cv2.drawContours(img, [box], 0, (0, 0, 255), 2)        
 
         def drawContourAndImmediateChildren(self, contour, img, contour_idx, hierarchy, contours):
 
@@ -511,8 +597,8 @@ class TicketApp(object):
                         print("verifyCorrectParkingViolationCell for: %s" % fname)
                         print("-" * 100)
 
-                        if not fname.startswith("ticket0"):
-                                return 
+                        #if not fname.startswith("ticket3"):
+                        #        return 
 
                         self.imgdir = dirname
                         self.filename = fname
@@ -538,6 +624,12 @@ class TicketApp(object):
 
                         if self.debug:
                                 cv2.imwrite('%s-cropped-parking-violation.png' % fname, croppedParkingCell)
+
+                        croppedParkingCodeText = self.getCroppedParkingCodeText(croppedParkingCell)
+
+                        if self.debug:
+                                cv2.imwrite('%s-cropped-parking-violation-text.png' % fname, croppedParkingCodeText)
+
 
                         if self.debug:
                                 cv2.imwrite('%s-parking-violation.png' % fname, img)
