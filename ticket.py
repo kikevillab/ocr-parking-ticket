@@ -307,15 +307,49 @@ class TicketApp(object):
                                                 rightMostChildIdx = childContourIdx
                                                 rightMostX = self.rightMostXVal(box)
 
-                                #if distanceFromTopRatio > 0.05:
-                                #        self.drawContour(childContour, img)
-
                         rightMostChildContour = contours[rightMostChildIdx]
+                        rightMostRotatedRect = cv2.minAreaRect(rightMostChildContour)
+                        rightMostBox = cv2.cv.BoxPoints(rightMostRotatedRect)
+                        rightMostBox = np.int0(rightMostBox)
+                        highestYVal = self.highestYVal(rightMostBox)
+                        lowestYVal = self.lowestYVal(rightMostBox)
+                        rightMostX = self.rightMostXVal(rightMostBox)
+
                         self.drawContour(rightMostChildContour, img)
 
-                return img
+                        # figure out the cropping rectangle
+                        # topLeftCorner: (0, highest y val from rightMostChild)
+                        # topRightCorner: (rightMosxt x val from rightMostChild, highest y val from rightMostChild)
+                        # bottomLeftCorner (0, lowest y val from rightMostChild)
+                        # bottomRightCorner: (rightMosxt x val from rightMostChild, lowest y val from rightMostChild)
+                        topLeftCorner = (0, highestYVal)
+                        topRightCorner = (rightMostX, highestYVal)
+                        bottomLeftCorner = (0, lowestYVal)
+                        bottomRightCorner = (rightMostX, lowestYVal)
+                        center = self.getBoxCenter(topLeftCorner, bottomRightCorner)
+                        size = self.getBoxSize(topLeftCorner, bottomRightCorner)
+                        print("center: %s size: %s" % (center, size))
+                        croppedRect = cv2.getRectSubPix(img, size, center)
+                        
+                        return croppedRect
+                        
+
+                return None
 
 
+        def getBoxCenter(self, topLeftCorner, bottomRightCorner):
+                topLeftX, topLeftY = topLeftCorner
+                bottomRightX, bottomRightY = bottomRightCorner
+                centerX = (topLeftX + bottomRightX) / 2.0
+                centerY = (topLeftY + bottomRightY) / 2.0
+                return (centerX, centerY)
+
+        def getBoxSize(self, topLeftCorner, bottomRightCorner):
+                topLeftX, topLeftY = topLeftCorner
+                bottomRightX, bottomRightY = bottomRightCorner
+                width = bottomRightX - topLeftX
+                height = bottomRightY - topLeftY
+                return (width, height)
 
         def highestYVal(self, box):
                 highestY = 10000
@@ -324,6 +358,15 @@ class TicketApp(object):
                         if y < highestY:
                                 highestY = y
                 return highestY
+
+        def lowestYVal(self, box):
+                lowestY = -1
+                for point in box:
+                        x,y = point
+                        if y > lowestY:
+                                lowestY = y
+                return lowestY
+
 
         def rightMostXVal(self, box):
                 rightMostX = -1
