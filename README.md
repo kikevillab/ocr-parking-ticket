@@ -65,19 +65,11 @@ command from your shell:
 
 Usage
 -----
-Once you have the requirement modules installed, you can run the script and pass the input image as the 
-parameter like this:
 
-	python ticket.py /path/to/image.png
+This will process ALL images in the data directory and output the cropped image with region of interest.
 
-The script will try to segment the interest row on the ticket. The output image is saved as `result.png` in
-the same directory as the input image.
+	python ticket.py --tests --debug data/path/to/image.png
 
-You can also pass the `--debug` flag:
-
-	python ticket --debug /path/to/image.png
-
-to see the temporary intermediate images created by the script. This is useful for debugging.
 
 Known issues
 ------------
