@@ -1,0 +1,106 @@
+
+TRC7.2.83 - Truck Loading Zone
+TRC7.2.84 - Commercial Vehicle Parking Restrictions
+TRC7.2.86 - Idling Engine While Parked
+TRC7.2.87 - Commercial Passenger Vehicle Street Restrictions
+TRC7.2.88 - For Sale Sign
+VC2250F	- Sidewalk Parking
+VC4461C	- Displaying Placard Not Issued To Person
+VC4463C	- Fraudulent Display Of Placard
+VC4462B	- Improper Registered Plates
+VC4464 - Altered Plates
+VC5200 - Display Lic. Plates
+VC5201 - Plates/Mounting
+VC5201F - Plate Cover
+VC5202 - No Plates
+VC5204A - Tabs
+VC21113A - School/Pub Ground
+VC21211	(38N) - Bicycle Paths/Lns
+VC22500A - Parking In Intersection
+VC22500B - Parking In Crosswalk
+VC22500C - Safety Zone
+VC22500D - 15 Ft Fire Station
+VC22500E - Driveway
+VC22500F - On Sidewalk
+VC22500G - Excavation
+VC22500H - Double Parking
+VC22500I - Bus Zone
+VC22500J - Tube Or Tunnel
+VC22500K - Bridge
+VC22500L - Wheelchair Access
+VC22500.1 - (32.4.A) Parking In Fire Lane
+VC22502A - Over 18 In. Frm Curb
+VC22502B - Wrong Way Parking
+VC22502E - One-Way Road/Pkg
+VC22505B - Signs
+VC22507.8A - Parking In Blue Zone Without Placard/Plate
+VC22507.8B - Blocking Access To Blue Zone
+VC22507.8C - Parking In The Crosshatch Area Adja To A Blue Zone
+VC22511.57A - Lost Stolen Or Expired Placard/Plate
+VC22511.57B - Misuse Of Placard/Plate
+VC22511.57C - Counterfeit, Forged Or Altered Placard/Plate
+VC22514 - Fire Hydrant
+VC22515A - Unattended Motor Vehicles
+VC22515B - Unsecured Motor Vehicles
+VC22516 - Locked Vehicles
+VC22521 - Railroad Tracks
+VC22522 - W/3 Ft Wheelchair Ramp
+VC22523A - Abandoned Vehicle/Highway
+VC22523B - Abandoned Vehicle/Public Or Private Prop
+VC22526A - Block/Intersection
+VC22526B - Block/Intesection While Turning
+VC23333 - Park/Veh Crossing
+TRC7.2.10 - Pedestrian Crossings
+TRC7.2.11 - Electric Assistive Personal Mobility Devices
+TRC7.2.12 - Bicycle Riding Restricted
+TRC7.2.20 - Residential Overtime
+TRC7.2.22 - Street Cleaning
+TRC7.2.23A - Parking Meter-Downtown Core
+TRC7.2.23B - Parking Meter-Outside Downtown Core
+TRC7.2.25 - Red Zone
+TRC7.2.26 - Yellow Zone
+TRC7.2.27 - White Zone
+TRC7.2.28 - Green Zone
+TRC7.2.29 - Parking for Three Days
+TRC7.2.30A - Overtime Parking-Downtown Core
+TRC7.2.30B - Overtime Parking-Outside Downtown Core
+TRC7.2.32 - Angled Parking
+TRC7.2.33 - Blocking Residential Door
+TRC7.2.34 - Median Dividers and Islands
+TRC7.2.35 - Parking on Grades
+TRC7.2.36 - 100 Feet Oversize
+TRC7.2.37 - Motorcycle Parking
+TRC7.2.38 - Parking in Stand
+TRC7.2.39 - Parking Transit-Only
+TRC7.2.40 - Tow-Away Zone - Downtown Core
+TRC7.2.41 - Tow-Away Zone-Outside Downtown Core
+TRC7.2.42 - Parking Restrictions
+TRC7.2.43 - Parking-Public Property
+TRC7.2.44 - Parking-Candlestick Park
+TRC7.2.45 - Temporary Parking Restriction
+TRC7.2.46 - Temporary Construction Zone
+TRC7.2.47 - Remove Chalk
+TRC7.2.48 - Repairing Vehicle
+TRC7.2.49 - Permit on Wrong Car
+TRC7.2.50 - Invalid Permit
+TRC7.2.51 - Parking Marked Space
+TRC7.2.52 - Car Share Parking
+TRC7.2.54 - Large Vehicle
+TRC7.2.60 - Parking Facility
+TRC7.2.61 - Entrance/Exit Parking Facility
+TRC7.2.62 - Blocking Space Parking Facility
+TRC7.2.63 - Speeding within Parking Facility
+TRC7.2.64 - Block Charging Bay
+TRC7.2.65 - Overtime Parking_Off Street Parking Meter
+TRC7.2.70 - Obstruction of Traffic-Vehicle
+TRC7.2.71 - Obstruction of Traffic Without Permit
+TRC7.3.3 - Obstruction of Traffic Without Permit
+TRC7.2.72 - Driving in Transit-Only Area
+TRC7.2.73 - Driving Through Parades
+TRC7.2.74 - Streetcar Right-of-Way
+TRC7.2.75 - Passing Safety Zones
+TRC7.2.76 - Removal of Vehicles-Collision
+TRC7.2.77 - Weight Restricted Streets
+TRC7.2.80 - Vehicles for Hire Parking
+TRC7.2.81 - Advertising Sign
+TRC7.2.82 - Selling from Vehicle
