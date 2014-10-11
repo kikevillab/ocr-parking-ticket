@@ -3,14 +3,29 @@ from PIL import Image, ImageDraw, ImageFont
 import shlex
 import os
 
-# this the font we'll use
-fontfile = "/usr/share/fonts/truetype/msttcorefonts/Courier_New.ttf"
-fnt = ImageFont.truetype(fontfile, 72)
 
-# make a dest directory
-destdir = "training_images"
-if not os.path.exists(destdir):
-    os.mkdir(destdir)
+def createFont(fontFileName):
+    fontfile = "/usr/share/fonts/truetype/msttcorefonts/%s" % fontFileName
+    fnt = ImageFont.truetype(fontfile, 72)
+    return fnt
+
+courierFont = createFont("Courier_New.ttf")
+timesFont = createFont("Times_New_Roman.ttf")
+
+trainingFonts = [courierFont]
+testFonts = [timesFont] 
+allFonts = testFonts + trainingFonts
+
+# the images used for training set will go here
+training_images = "training_images"
+if not os.path.exists(training_images):
+    os.mkdir(training_images)
+
+# the images used for test set will go here
+test_images = "test_images"
+if not os.path.exists(test_images):
+    os.mkdir(test_images)
+
 
 lines = [line.strip() for line in open('training_data.txt')]
 for line in lines:
@@ -20,19 +35,29 @@ for line in lines:
 
     text = line.upper()
 
-    im = Image.new("RGB", (950, 150), "white")
-    draw = ImageDraw.Draw(im)
-    draw.text((10, 20), text, font=fnt, fill="black")
-    tokens = shlex.split(line)
-    parking_code = tokens[0]
-    print parking_code
+    for font in allFonts:
 
-    dirname = os.path.join(destdir, parking_code)
-    if not os.path.exists(dirname):
-        os.mkdir(dirname)
+        destDir = "error"
+        if font in trainingFonts:
+            destDir = training_images
+        else:
+            destDir = test_images
 
-    filename = os.path.join(dirname, "%s.png" % parking_code)
-    if os.path.exists(filename):
-        os.remove(filename)
+        im = Image.new("RGB", (950, 150), "white")
+        draw = ImageDraw.Draw(im)
+        draw.text((10, 20), text, font=font, fill="black")
+        tokens = shlex.split(line)
+        parking_code = tokens[0]
+        print parking_code
 
-    im.save(filename)
+        dirname = os.path.join(destDir, parking_code)
+        if not os.path.exists(dirname):
+            os.mkdir(dirname)
+
+        filename = os.path.join(dirname, "%s.png" % font.getname()[0])
+        if os.path.exists(filename):
+            os.remove(filename)
+
+        im.save(filename)
+
+    
