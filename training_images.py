@@ -105,7 +105,7 @@ if not os.path.exists(test_images):
 
 
 index = TrainingImagesIndex()
-lines = [line.strip() for line in open('training_data_sm.txt')]
+lines = [line.strip() for line in open('training_data.txt')]
 for line in lines:
 
     if line == "":

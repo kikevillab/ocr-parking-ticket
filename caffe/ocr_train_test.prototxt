@@ -5,8 +5,8 @@ layers {
   top: "data"
   top: "label"
   image_data_param {
-    source: "../ocr_training_images.txt"
-    batch_size: 50
+    source: "ocr_training_images.txt"
+    batch_size: 5
   }
   include: { phase: TRAIN }
 }
@@ -17,8 +17,8 @@ layers {
   top: "data"
   top: "label"
   image_data_param {
-    source: "../ocr_training_images.txt"
-    batch_size: 100
+    source: "ocr_training_images.txt"
+    batch_size: 10
   }
   include: { phase: TEST }
 }
