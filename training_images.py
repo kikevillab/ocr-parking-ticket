@@ -53,18 +53,39 @@ class TrainingImagesIndex(object):
 
     def __init__(self):
         self.indexEntries = []
+        self.numericLabelMap = {}
+        self.labelCounter = 0
 
     def addToIndex(self, filename, label):
         indexEntry = (filename, label)
         self.indexEntries.append(indexEntry)
+        self.addLabelToMap(label)
+
+    def addLabelToMap(self, label):
+        # generate a map from labels to numbers and save it
+        # eg, TRC7.2.87 -> 25 (since it's the 25th label we've seen)
+        if not self.numericLabelMap.has_key(label):
+            self.numericLabelMap[label] = self.labelCounter
+            self.labelCounter += 1
     
+    def saveNumericLabelMap(self, savefile):
+        f = open(savefile, 'w')
+        for label, numericLabel in self.numericLabelMap.iteritems():
+            f.write("%s -> %s\n" % (label, numericLabel))
+        f.close();
+
     def saveIndex(self, savefile):
+
         f = open(savefile, 'w')
         for indexEntry in self.indexEntries:
             filename = indexEntry[0]
             label = indexEntry[1]
-            f.write("%s %s\n" % (filename, label))
+            numericLabel = self.numericLabelMap[label]
+            f.write("%s %s\n" % (filename, numericLabel))
         f.close();
+
+        self.saveNumericLabelMap("ocr_training_labels.txt")
+
 
 courierFont = createFont("Courier_New.ttf")
 timesFont = createFont("Times_New_Roman.ttf")
