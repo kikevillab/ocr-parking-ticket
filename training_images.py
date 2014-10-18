@@ -18,7 +18,8 @@ def createImage(x, y, text, label, font, destDir):
     if not os.path.exists(dirname):
         os.mkdir(dirname)
 
-    filename = os.path.join(dirname, "%s-%s-%s.png" % (font.getname()[0], x, y))
+    fontNameNoSpaces = getFontNameNoSpaces(font)    
+    filename = os.path.join(dirname, "%s-%s-%s.png" % (fontNameNoSpaces, x, y))
     print filename
     if os.path.exists(filename):
         os.remove(filename)
@@ -26,6 +27,14 @@ def createImage(x, y, text, label, font, destDir):
     im.save(filename)
 
     return filename
+
+
+'''
+Given a font object (as returned from ImageFont.truetype()), get the font
+name with any spaces removed from the name.  Eg, "Courier New" -> "CourierNew"
+'''
+def getFontNameNoSpaces(font):
+    return font.getname()[0].replace(" ", "")
 
 
 '''
@@ -75,7 +84,7 @@ if not os.path.exists(test_images):
 
 
 index = TrainingImagesIndex()
-lines = [line.strip() for line in open('training_data.txt')]
+lines = [line.strip() for line in open('training_data_sm.txt')]
 for line in lines:
 
     if line == "":
