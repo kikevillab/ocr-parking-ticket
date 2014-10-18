@@ -3,14 +3,33 @@ from PIL import Image, ImageDraw, ImageFont
 import shlex
 import os
 
-def createFont(fontFileName):
+
+'''
+Each training profile specifies what kind of images will be generated
+'''
+class TrainingProfile(object):
+
+    def __init__(self, imgWidth, imgHeight, xPositions, yPositions, fontSize, trainingTextFile):
+        self.imgWidth = imgWidth
+        self.imgHeight = imgHeight
+        self.trainingTextFile = trainingTextFile
+        self.xPositions = xPositions
+        self.yPositions = yPositions
+        self.fontSize = fontSize
+
+    
+trainParkingCodesSmall = TrainingProfile(190, 30, [0, 2, 4], [2, 5, 8], 12, 'training_data_sm.txt')
+trainAlphabet = TrainingProfile(28, 28, [5], [0], 24, "training_data_alphabet.txt")
+trainingProfile = trainAlphabet
+
+def createFont(fontFileName, fontSize):
     fontfile = "/usr/share/fonts/truetype/msttcorefonts/%s" % fontFileName
-    fnt = ImageFont.truetype(fontfile, 72)
+    fnt = ImageFont.truetype(fontfile, fontSize)
     return fnt
 
-def createImage(x, y, text, label, font, destDir):
+def createImage(x, y, width, height, text, label, font, destDir):
 
-    im = Image.new("RGB", (950, 150), "white")
+    im = Image.new("RGB", (width, height), "white")
     draw = ImageDraw.Draw(im)
     draw.text((x, y), text, font=font, fill="black")
 
@@ -87,9 +106,9 @@ class TrainingImagesIndex(object):
         self.saveNumericLabelMap("ocr_training_labels.txt")
 
 
-courierFont = createFont("Courier_New.ttf")
-timesFont = createFont("Times_New_Roman.ttf")
-arialFont = createFont("Arial.ttf")
+courierFont = createFont("Courier_New.ttf", trainingProfile.fontSize)
+timesFont = createFont("Times_New_Roman.ttf", trainingProfile.fontSize)
+arialFont = createFont("Arial.ttf", trainingProfile.fontSize)
 
 allFonts = [courierFont, timesFont, arialFont]
 
@@ -104,8 +123,11 @@ if not os.path.exists(test_images):
     os.mkdir(test_images)
 
 
+lines = open(trainingProfile.trainingTextFile)  
 index = TrainingImagesIndex()
-lines = [line.strip() for line in open('training_data.txt')]
+lines = [line.strip() for line in lines]
+imgWidth = trainingProfile.imgWidth
+imgHeight = trainingProfile.imgHeight
 for line in lines:
 
     if line == "":
@@ -115,10 +137,10 @@ for line in lines:
 
     for font in allFonts:
         
-        for x in [5,10,15,20]:
-            for y in [15,25]:
+        for x in trainingProfile.xPositions:
+            for y in trainingProfile.yPositions:
                 label = labelFromText(text)
-                filename = createImage(x, y, text, label, font, training_images)
+                filename = createImage(x, y, imgWidth, imgHeight, text, label, font, training_images)
                 index.addToIndex(filename, label)
 
     
